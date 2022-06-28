@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+LOCKFILE=/tmp/${0##*/}.lock
+
+[ -f ${LOCKFILE} ] && exit 0
+
+echo $$ > ${LOCKFILE}
+
+trap "rm -f ${LOCKFILE}; exit 0" TERM INT
+trap "rm -f ${LOCKFILE}" EXIT QUIT
+
+while :; do
+	[ -f /sys/class/backlight/intel_backlight/uevent ] && {
+		min=$((192))
+		max=$(cat /sys/class/backlight/intel_backlight/max_brightness)
+		while inotifywait -qq -r /sys/class/backlight/intel_backlight/uevent ; do
+				value=$(cat /sys/class/backlight/intel_backlight/brightness)
+				value=$(echo "scale=2; ($value - $min)/($max - $min)" | bc -l)
+				if (( $(echo "$value < 0.2" |bc -l) )); then
+					value=".2"
+				fi
+				echo "$value"
+				xrandr --output eDP-1 --brightness "0${value}"
+		done
+	}
+
+	sleep 1
+done
+
+exit 0
