@@ -1,1 +1,1 @@
-# predator backlight handling
+# Acer predator backlight handling
